@@ -101,9 +101,9 @@ def q_learning(state, next_state, action, next_state_action):
     return state.q_values[action] +\
             learning_rate * (reward(state, next_state) + gamma * next_state_q_value - state.q_values[action])
 
-N_STEPS = 30000
+N_STEPS = 20000
 METHOD = 'BOTH'
-EPSILONS = [0.01, 0.1]
+EPSILONS = [0.01, 0.1, 0.2]
 
 def run_code(use_q_learning=False, _epsilon=0.01):
     states = initialize_states()
@@ -196,7 +196,7 @@ def plot_best_q_values_states(states, method, epsilon):
                            ha="center", va="center", color="w")
 
     fig.tight_layout()
-    plt.title("Best q values for each cell")
+    plt.title("{}; $\epsilon={}$".format(method, epsilon))
     for i in range(N_ROWS):
         str_ = ""
         for j in range(N_COLUMNS):
