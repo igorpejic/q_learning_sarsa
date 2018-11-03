@@ -4,6 +4,8 @@ from random import *
 import numpy as np
 import matplotlib.pyplot as plt
 
+from colorama import Fore, Back, Style
+
 
 class State(object):
     def __init__(self, i, j, is_black=False, is_red=False, is_green=False):
@@ -201,7 +203,7 @@ def check_accuracy(states):
 
     return mistakes_delta
 
-def plot_best_q_values_states():
+def plot_best_q_values_states(states):
     final_grid = np.array([[max(states[j][i].q_values) for i in range(8)] for j in range(8)])
     fig, ax = plt.subplots()
     im = ax.imshow(final_grid, cmap='coolwarm')
@@ -227,13 +229,47 @@ def plot_best_q_values_states():
     plt.show()
 
 
+def q_to_arrow(index):
+    if index == 0:
+        return '▲'
+    elif index == 1:
+        return '►'
+    elif index == 2:
+        return '▼'
+    else:
+        return '◄'
+
+def display_optimal_policy(states):
+
+    print('-' * 40)
+    for i in range(len(states)):
+        line_str = ''
+        for j in range(len(states[0])):
+            if j == 0:
+                print('|', end='')
+            if states[i][j].is_black:
+                print(Back.WHITE + '   ', end='')
+                print(Style.RESET_ALL + ' |', end='')
+            elif states[i][j].is_red:
+                print(Back.RED + '   ', end='')
+                print(Style.RESET_ALL + ' |', end='')
+            elif states[i][j].is_green:
+                print(Back.GREEN + '   ', end='')
+                print(Style.RESET_ALL + ' |', end='')
+            else:
+                print(' {} | '.format(q_to_arrow(states[i][j].get_max_q_index())), end='')
+        print(line_str)
+        print('-' * 40)
+
+
 mistakes_q_learning, end_states_q_learning = run_code(use_q_learning=True)
-mistakes_sarsa, end_states_sarsa = run_code(use_q_learning=False)
+# mistakes_sarsa, end_states_sarsa = run_code(use_q_learning=False)
 
 # plot_best_q_values_states(end_states_sarsa)
+display_optimal_policy(end_states_q_learning)
 plt.gca().invert_yaxis()
-plt.plot(mistakes_q_learning)
-plt.plot(mistakes_sarsa)
-plt.grid(which='y')
-plt.legend(['mistakes Q-learning', 'mistakes SARSA'])
-plt.show()
+#plt.plot(mistakes_q_learning)
+# plt.plot(mistakes_sarsa)
+#plt.grid(which='y')
+#plt.legend(['mistakes Q-learning', 'mistakes SARSA'])
+#plt.show()
