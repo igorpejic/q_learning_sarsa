@@ -262,14 +262,15 @@ def display_optimal_policy(states):
         print('-' * 40)
 
 
-mistakes_q_learning, end_states_q_learning = run_code(use_q_learning=True)
-# mistakes_sarsa, end_states_sarsa = run_code(use_q_learning=False)
+if __name__ == '__main__':
+    mistakes_q_learning, end_states_q_learning = run_code(use_q_learning=True)
+    # mistakes_sarsa, end_states_sarsa = run_code(use_q_learning=False)
 
-# plot_best_q_values_states(end_states_sarsa)
-display_optimal_policy(end_states_q_learning)
-plt.gca().invert_yaxis()
-#plt.plot(mistakes_q_learning)
-# plt.plot(mistakes_sarsa)
-#plt.grid(which='y')
-#plt.legend(['mistakes Q-learning', 'mistakes SARSA'])
-#plt.show()
+    # plot_best_q_values_states(end_states_sarsa)
+    display_optimal_policy(end_states_q_learning)
+    plt.gca().invert_yaxis()
+    #plt.plot(mistakes_q_learning)
+    # plt.plot(mistakes_sarsa)
+    #plt.grid(which='y')
+    #plt.legend(['mistakes Q-learning', 'mistakes SARSA'])
+    #plt.show()

@@ -3,6 +3,8 @@ from numpy import *
 from random import *
 import numpy as np
 import matplotlib.pyplot as plt
+from colorama import Fore, Back, Style
+from gridworld import q_to_arrow
 
 
 N_ROWS = 6
@@ -103,7 +105,7 @@ def q_learning(state, next_state, action, next_state_action):
 
 N_STEPS = 20000
 METHOD = 'BOTH'
-EPSILONS = [0.01, 0.1, 0.2]
+EPSILONS = [0.005, 0.05, 0.5]
 
 def run_code(use_q_learning=False, _epsilon=0.01):
     states = initialize_states()
@@ -140,8 +142,10 @@ def run_code(use_q_learning=False, _epsilon=0.01):
             # print(current_state, next_state, action_to_verbose(next_action), di, dj)
             current_state = next_state
 
+        '''
         if (i % 100 == 0):
             print(i)
+        '''
         mistakes_array.append(check_accuracy(states))
 
     return np.array(mistakes_array), states
@@ -178,10 +182,14 @@ def plot_errors(mistakes_sarsa, mistakes_q_learning):
     plt.savefig('CLIFF_SARSA_VS_Q_LEARNING_{}.png'.format(N_STEPS))
     # plt.show()
 
-def plot_best_q_values_states(states, method, epsilon):
+def plot_best_q_values_states(states, method, epsilon, PLOTS, fig, ax):
     final_grid = np.array([[max(states[i][j].q_values) for j in range(N_COLUMNS)] for i in range(N_ROWS)])
-    fig, ax = plt.subplots()
-    im = ax.imshow(final_grid, cmap='coolwarm')
+    if PLOTS > 2:
+        ax = ax[PLOTS % 3, 1]
+    else:
+        ax = ax[PLOTS, 0]
+    ax.imshow(final_grid, aspect='auto', cmap='coolwarm')
+    # fig, ax = plt.subplots()
     ax.set_xticks(np.arange(N_COLUMNS))
     ax.set_yticks(np.arange(N_ROWS))
     ax.set_xticklabels([i for i in range(N_COLUMNS)])
@@ -196,14 +204,34 @@ def plot_best_q_values_states(states, method, epsilon):
                            ha="center", va="center", color="w")
 
     fig.tight_layout()
-    plt.title("{}; $\epsilon={}$".format(method, epsilon))
+    ax.set_title("{}; $\epsilon={}$".format(method, epsilon))
     for i in range(N_ROWS):
         str_ = ""
         for j in range(N_COLUMNS):
             str_ += str(int(final_grid[i][j])) + ", "
-    plt.savefig('CLIFF_WALKING: {}-{}-{}.png'.format(N_STEPS, epsilon, method))
-    plt.show()
+    PLOTS += 1
+    # plt.savefig('CLIFF_WALKING: {}-{}-{}.png'.format(N_STEPS, epsilon, method))
+    # plt.show()
 
+def display_optimal_policy(states, method, epsilon):
+
+    print("{}; ε = {}".format(method, epsilon))
+    print('-' * 60)
+    for i in range(len(states)):
+        line_str = ''
+        for j in range(len(states[0])):
+            if j == 0:
+                print('|', end='')
+            if states[i][j].is_goal:
+                print(Back.GREEN + '   ', end='')
+                print(Style.RESET_ALL + ' | ', end='')
+            elif states[i][j].is_cliff:
+                print(Back.RED + '   ', end='')
+                print(Style.RESET_ALL + ' | ', end='')
+            else:
+                print(' {}  | '.format(q_to_arrow(states[i][j].get_max_q_index())), end='')
+        print(line_str)
+        print('-' * 60)
 
 if METHOD not in ['Q_LEARNING', 'SARSA', 'BOTH']:
     print('invalidt method. must be Q_LEARNING or SARSA or both')
@@ -211,14 +239,24 @@ if METHOD not in ['Q_LEARNING', 'SARSA', 'BOTH']:
 
 mistakes_q_learning = []
 mistakes_sarsa = []
+PLOTS = 0
+fig, axes = plt.subplots(3, 2)
 for epsilon in EPSILONS:
     if METHOD == 'Q_LEARNING' or METHOD == 'BOTH':
         _mistakes_q_learning, end_states_q_learning = run_code(use_q_learning=True, _epsilon=epsilon)
-        plot_best_q_values_states(end_states_q_learning, 'Q_LEARNING', epsilon)
-        mistakes_q_learning.append((epsilon, _mistakes_q_learning))
+        plot_best_q_values_states(end_states_q_learning, 'Q_LEARNING', epsilon, PLOTS, fig, axes)
+        display_optimal_policy(end_states_q_learning, 'Q LEARNING', epsilon)
+        # mistakes_q_learning.append((epsilon, _mistakes_q_learning))
+    PLOTS += 1
+
+for epsilon in EPSILONS:
     if METHOD == 'SARSA' or METHOD == 'BOTH':
         _mistakes_sarsa, end_states_sarsa = run_code(use_q_learning=False, _epsilon=epsilon)
-        plot_best_q_values_states(end_states_sarsa, 'SARSA', epsilon)
-        mistakes_sarsa.append((epsilon, _mistakes_sarsa))
+        plot_best_q_values_states(end_states_sarsa, 'SARSA', epsilon, PLOTS, fig, axes)
+        display_optimal_policy(end_states_sarsa, 'SARSA', epsilon)
+        # mistakes_sarsa.append((epsilon, _mistakes_sarsa))
+    PLOTS += 1
 
-plot_errors(mistakes_sarsa, mistakes_q_learning)
+plt.savefig('all_runs.png')
+plt.show()
+# plot_errors(mistakes_sarsa, mistakes_q_learning)
