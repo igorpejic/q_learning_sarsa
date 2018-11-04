@@ -94,18 +94,18 @@ def action_to_verbose(action):
 
 
 def sarsa(state, next_state, action, next_state_action):
-    return state.q_values[action] +\
+    return reward(state, next_state), state.q_values[action] +\
             learning_rate * (reward(state, next_state) + gamma * next_state.q_values[next_state_action] - state.q_values[action])
 
 
 def q_learning(state, next_state, action, next_state_action):
     next_state_q_value = next_state.get_max_q_value()
-    return state.q_values[action] +\
+    return reward(state, next_state), state.q_values[action] +\
             learning_rate * (reward(state, next_state) + gamma * next_state_q_value - state.q_values[action])
 
-N_STEPS = 20000
+N_STEPS = 10000
 METHOD = 'BOTH'
-EPSILONS = [0.005, 0.05, 0.5]
+EPSILONS = [0.05, 0.1, 0.25]
 
 def run_code(use_q_learning=False, _epsilon=0.01):
     states = initialize_states()
@@ -113,6 +113,7 @@ def run_code(use_q_learning=False, _epsilon=0.01):
     min_epsilon = 0.00001
     epsilon = _epsilon
 
+    episode_rewards = []
     mistakes_array = []  # array which tracks error from convergence on each step
     for i in range(N_STEPS):
         # select a random starting state
@@ -120,7 +121,9 @@ def run_code(use_q_learning=False, _epsilon=0.01):
 
         # iterate until reaching a terminal state
         epsilon = max(min_epsilon, epsilon * decay)
+        episode_reward = 0
         while not current_state.is_terminal():
+
             if random() < epsilon:
                 next_action = randint(0, 3)
             else:
@@ -135,12 +138,17 @@ def run_code(use_q_learning=False, _epsilon=0.01):
                 next_state_action = next_state.get_max_q_index()
 
             if use_q_learning:
-                current_state.q_values[next_action] = q_learning(current_state, next_state, next_action, next_state_action)
+                reward, current_state.q_values[next_action] = q_learning(current_state, next_state, next_action, next_state_action)
             else:
-                current_state.q_values[next_action] = sarsa(current_state, next_state, next_action, next_state_action)
+                reward, current_state.q_values[next_action] = sarsa(current_state, next_state, next_action, next_state_action)
 
             # print(current_state, next_state, action_to_verbose(next_action), di, dj)
+            episode_reward += reward
             current_state = next_state
+        if len(episode_rewards):
+            episode_rewards.append(episode_rewards[-1] + episode_reward)
+        else:
+            episode_rewards.append(episode_reward)
 
         '''
         if (i % 100 == 0):
@@ -148,7 +156,7 @@ def run_code(use_q_learning=False, _epsilon=0.01):
         '''
         mistakes_array.append(check_accuracy(states))
 
-    return np.array(mistakes_array), states
+    return np.array(mistakes_array), states, episode_rewards
 
 def check_accuracy(states):
     correct_result = np.array([
@@ -241,22 +249,37 @@ mistakes_q_learning = []
 mistakes_sarsa = []
 PLOTS = 0
 fig, axes = plt.subplots(3, 2)
+rewards = []
 for epsilon in EPSILONS:
     if METHOD == 'Q_LEARNING' or METHOD == 'BOTH':
-        _mistakes_q_learning, end_states_q_learning = run_code(use_q_learning=True, _epsilon=epsilon)
+        _mistakes_q_learning, end_states_q_learning, episode_rewards = run_code(use_q_learning=True, _epsilon=epsilon)
         plot_best_q_values_states(end_states_q_learning, 'Q_LEARNING', epsilon, PLOTS, fig, axes)
         display_optimal_policy(end_states_q_learning, 'Q LEARNING', epsilon)
-        # mistakes_q_learning.append((epsilon, _mistakes_q_learning))
+        mistakes_q_learning.append((epsilon, _mistakes_q_learning))
+        rewards.append(('Q_LEARNING', epsilon, episode_rewards))
     PLOTS += 1
 
 for epsilon in EPSILONS:
     if METHOD == 'SARSA' or METHOD == 'BOTH':
-        _mistakes_sarsa, end_states_sarsa = run_code(use_q_learning=False, _epsilon=epsilon)
+        _mistakes_sarsa, end_states_sarsa, episode_rewards = run_code(use_q_learning=False, _epsilon=epsilon)
         plot_best_q_values_states(end_states_sarsa, 'SARSA', epsilon, PLOTS, fig, axes)
         display_optimal_policy(end_states_sarsa, 'SARSA', epsilon)
-        # mistakes_sarsa.append((epsilon, _mistakes_sarsa))
+        mistakes_sarsa.append((epsilon, _mistakes_sarsa))
+        rewards.append(('SARSA', epsilon, episode_rewards))
     PLOTS += 1
+
 
 plt.savefig('all_runs.png')
 plt.show()
-# plot_errors(mistakes_sarsa, mistakes_q_learning)
+# for i, j  in [(0, 3), (1, 4), (2, 5)]:
+for reward in rewards:
+    # plt.plot(rewards[i][2], 'o', label='{} ε = {} '.format(rewards[i][0], rewards[i][1]))
+    # plt.plot(rewards[j][2], 'o', label='{} ε = {} '.format(rewards[j][0], rewards[j][1]))
+    plt.plot(reward[2], label='{} ε = {} '.format(reward[0], reward[1]))
+    plt.xlabel('Episodes')
+    plt.ylabel('Sum of rewards during episode')
+plt.legend()
+plt.show()
+plt.savefig('episode_rewards.png')
+
+plot_errors(mistakes_sarsa, mistakes_q_learning)
